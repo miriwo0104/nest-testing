@@ -2,10 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { type CreateUserDto, type User } from './dto/create-user.dto';
 import { type UpdateUserDto } from './dto/update-user.dto';
 import { ulid } from 'ulidx';
+import { ScanCommand, GetCommand, PutCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import { dynamoDb } from '../dynamodb.client';
 
 @Injectable()
 export class UsersService {
-  private users: User[] = [];
 
   /**
    * ユーザー作成
@@ -13,15 +14,27 @@ export class UsersService {
    * @param createUserDto
    * @returns
    */
-  create(createUserDto: CreateUserDto): User {
+  async create(createUserDto: CreateUserDto): Promise<User | undefined> {
     const userId: string = ulid(); // ULID生成
     const user: User = {
       id: userId, // 生成したULIDを割り当て
-      ...createUserDto // リクエストボディのオブジェクトをスプレッド構文でオブジェクトに格納
-    }
+      ...createUserDto, // リクエストボディのオブジェクトをスプレッド構文でオブジェクトに格納
+    };
 
-    this.users.push(user); // プロパティの配列に格納
-    return user;
+    try {
+      await dynamoDb.send(new PutCommand({
+        TableName: 'Users',
+        Item: {
+          id: userId,
+          ...createUserDto,
+        },
+      }));
+
+      return user;
+    } catch (error) {
+      console.log('失敗', error);
+      return undefined;
+    }
   }
 
   /**
@@ -29,8 +42,17 @@ export class UsersService {
    *
    * @returns
    */
-  findAll(): User[] {
-    return this.users; // 一覧返却だからプロパティ返すだけ
+  async findAll(): Promise<User[]> {
+    try {
+      const results = await dynamoDb.send(new ScanCommand({ // Partition Keyを使わない全件取得なので遅いから注意
+        TableName: 'Users',
+      }));
+
+      return (results.Items as User[]) ?? [];
+    } catch (error) {
+      console.log('失敗', error);
+      return [];
+    }
   }
 
   /**
@@ -39,7 +61,7 @@ export class UsersService {
    * @param id
    * @returns
    */
-  findOne(id: string): User | undefined {
+  async findOne(id: string): Promise<User | undefined> {
     return this.findById(id);
   }
 
@@ -50,18 +72,29 @@ export class UsersService {
    * @param updateUserDto
    * @returns
    */
-  update(id: string, updateUserDto: UpdateUserDto): User | undefined {
-    const user = this.findById(id);
-    if (!user) {
+  async update(id: string, updateUserDto: UpdateUserDto): Promise<User | undefined> {
+    try {
+      const result = await dynamoDb.send(new UpdateCommand({
+        TableName: 'Users',
+        Key: {
+          id: id,
+        },
+        UpdateExpression: 'set #name = :name, email = :email',
+        ExpressionAttributeNames: {
+          '#name': 'name', // nameはDynamoDBの予約語のためエイリアスを使用
+        },
+        ExpressionAttributeValues: {
+          ':name': updateUserDto.name,
+          ':email': updateUserDto.email,
+        },
+        ReturnValues: 'ALL_NEW',
+      }));
+
+      return result.Attributes as User | undefined;
+    } catch (error) {
+      console.log('失敗', error);
       return undefined;
     }
-
-    const updateUser = {...user, ...updateUserDto}; // スプレッド構文でオブジェクトを展開して合体
-
-    // usersプロパティをチェック、パスパラメーターのidと突き合わせ、一致したら更新用オブジェクトをmapで新しく作られるarrayに格納、一致しなければそのままmapで新しく作られるarrayに格納
-    this.users = this.users.map(user => user.id === id ? updateUser : user);
-
-    return updateUser;
   }
 
   /**
@@ -70,16 +103,21 @@ export class UsersService {
    * @param id
    * @returns
    */
-  remove(id: string): User | undefined {
-    const deleteUser = this.findById(id);
-    if (!deleteUser) {
+  async remove(id: string): Promise<User | undefined> {
+    try {
+      const result = await dynamoDb.send(new DeleteCommand({
+        TableName: 'Users',
+        Key: {
+          id: id,
+        },
+        ReturnValues: 'ALL_OLD',
+      }));
+
+      return result.Attributes as User | undefined;
+    } catch (error) {
+      console.log('失敗', error);
       return undefined;
     }
-
-    // userプロパティをチェック、パスパラメーターのidと突き合わせ、条件true（パスパラメータとして与えられたid以外）なら新しく作られるarrayに格納、条件false（パスパラメーターとして与えられたid）は新しく作られるarrayに格納しない
-    this.users = this.users.filter(user => user.id !== id);
-
-    return deleteUser;
   }
 
   /**
@@ -88,7 +126,19 @@ export class UsersService {
    * @param id
    * @returns
    */
-  private findById(id: string): User | undefined {  // ヒットしたらUser返却ヒットしなかったらfindはundefined返す
-    return this.users.find(user => user.id === id);
+  private async findById(id: string): Promise<User | undefined> {
+    try {
+      const result = await dynamoDb.send(new GetCommand({
+        TableName: 'Users',
+        Key: {
+          id: id,
+        },
+      }));
+
+      return result.Item as User | undefined;
+    } catch (error) {
+      console.log('失敗', error);
+      return undefined;
+    }
   }
 }
