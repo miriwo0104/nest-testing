@@ -74,19 +74,29 @@ export class UsersService {
    */
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User | undefined> {
     try {
+      const expressions: string[] = [];
+      const expressionAttributeNames: Record<string, string> = {};
+      const expressionAttributeValues: Record<string, string> = {};
+
+      if (updateUserDto.name !== undefined) {
+        expressions.push('#name = :name');
+        expressionAttributeNames['#name'] = 'name';
+        expressionAttributeValues[':name'] = updateUserDto.name;
+      }
+
+      if (updateUserDto.email !== undefined) {
+        expressions.push('email = :email');
+        expressionAttributeValues[':email'] = updateUserDto.email;
+      }
+
       const result = await dynamoDb.send(new UpdateCommand({
         TableName: 'Users',
-        Key: {
-          id: id,
-        },
-        UpdateExpression: 'set #name = :name, email = :email',
-        ExpressionAttributeNames: {
-          '#name': 'name', // nameはDynamoDBの予約語のためエイリアスを使用
-        },
-        ExpressionAttributeValues: {
-          ':name': updateUserDto.name,
-          ':email': updateUserDto.email,
-        },
+        Key: { id: id },
+        UpdateExpression: `set ${expressions.join(', ')}`,
+        ExpressionAttributeNames: Object.keys(expressionAttributeNames).length > 0
+          ? expressionAttributeNames
+          : undefined, // ← 空なら渡さない
+        ExpressionAttributeValues: expressionAttributeValues,
         ReturnValues: 'ALL_NEW',
       }));
 
