@@ -128,11 +128,6 @@ describe('UsersService', () => {
   });
 
   describe('update', () => { 
-    const beforeValue = {
-      id: testUlid,
-      name: '太郎',
-      email: 'taro@example.com',
-    };
     const afterValue = {
       name: '太郎_update',
       email: 'taro.update@example.com',
@@ -159,6 +154,36 @@ describe('UsersService', () => {
         mockSend.mockRejectedValueOnce(new Error('DynamoDB error'));
 
         const result = await service.update(testUlid, afterValue);
+
+        expect(result).toBeUndefined();
+      });
+    });
+  });
+
+  describe('remove', () => { 
+    const expectedValue = {
+      id: testUlid,
+      name: '太郎',
+      email: 'taro@example.com',
+    };
+    describe('正常系', () => {
+      it('ユーザーを削除', async () => {
+        mockSend.mockResolvedValueOnce({
+          Attributes: expectedValue
+        });
+
+        const result = await service.remove(testUlid);
+
+        expect(result?.id).toBe(testUlid);
+        expect(result?.email).toBe(expectedValue.email);
+        expect(result?.name).toBe(expectedValue.name);
+      });
+    });
+    describe('異常系', () => {
+      it('DynamoDBがエラーを投げた場合', async () => {
+        mockSend.mockRejectedValueOnce(new Error('DynamoDB error'));
+
+        const result = await service.remove(testUlid);
 
         expect(result).toBeUndefined();
       });
