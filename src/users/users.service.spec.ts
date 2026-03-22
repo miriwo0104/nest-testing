@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
 import { dynamoDb } from '../dynamodb.client';
 
-const testUlid : string = '01HTEST00000000000000000';
+const testUlid: string = '01HTEST00000000000000000';
 
 // NOTE: DBのモック
 jest.mock('../dynamodb.client', () => ({
@@ -40,20 +40,20 @@ describe('UsersService', () => {
   });
 
   describe('create', () => {
-      const requestBody = {
-        name: '太郎',
-        email: 'taro@example.com',
-      };
+    const requestBody = {
+      name: '太郎',
+      email: 'taro@example.com',
+    };
 
     describe('正常系', () => {
       it('ユーザー作成', async () => {
         mockSend.mockResolvedValueOnce({});
-        
+
         const result = await service.create(requestBody);
-        
+
         expect(result?.id).toBe(testUlid);
         expect(result?.email).toBe('taro@example.com');
-        expect(result?.name).toBe('太郎')
+        expect(result?.name).toBe('太郎');
       });
     });
 
@@ -78,7 +78,7 @@ describe('UsersService', () => {
             { id: 'id2', name: '花子', email: 'hanako@example.com' },
           ],
         });
-        
+
         const result = await service.findAll();
         expect(result).toHaveLength(2);
         expect(result[0].name).toBe('太郎');
@@ -102,20 +102,20 @@ describe('UsersService', () => {
       email: 'taro@example.com',
     };
 
-    describe('正常系', () => {  
+    describe('正常系', () => {
       it('ユーザーを一件返す', async () => {
         mockSend.mockResolvedValueOnce({
           // NOTE: findByIdメソッドで読んでるdynamoDb.sendをモックしているので、戻り値の形状をあわせるためにDynamoDB SDK返すレスポンスキーを指定
-          Item: expectedValue
+          Item: expectedValue,
         });
-        
+
         const result = await service.findOne(testUlid);
         expect(result?.id).toBe(testUlid);
         expect(result?.name).toBe(expectedValue.name);
         expect(result?.email).toBe(expectedValue.email);
       });
     });
-  
+
     describe('異常系', () => {
       it('DynamoDBがエラーを投げた場合', async () => {
         mockSend.mockRejectedValueOnce(new Error('DynamoDB error'));
@@ -126,7 +126,7 @@ describe('UsersService', () => {
     });
   });
 
-  describe('update', () => { 
+  describe('update', () => {
     const afterValue = {
       name: '太郎_update',
       email: 'taro.update@example.com',
@@ -139,9 +139,9 @@ describe('UsersService', () => {
     describe('正常系', () => {
       it('ユーザーを更新', async () => {
         mockSend.mockResolvedValueOnce({
-          Attributes: expectedValue
+          Attributes: expectedValue,
         });
-  
+
         const result = await service.update(testUlid, afterValue);
         expect(result?.id).toBe(testUlid);
         expect(result?.email).toBe(afterValue.email);
@@ -150,8 +150,8 @@ describe('UsersService', () => {
 
       it('ユーザーを更新（nameのみ受け取り）', async () => {
         const attributeForNameOnly = {
-          name: '太郎_update'
-        }
+          name: '太郎_update',
+        };
         const afterValueForNameOnly = {
           ...attributeForNameOnly,
           email: 'taro@example.com',
@@ -161,9 +161,9 @@ describe('UsersService', () => {
           ...afterValueForNameOnly,
         };
         mockSend.mockResolvedValueOnce({
-          Attributes: expectedValueForNameOnly
+          Attributes: expectedValueForNameOnly,
         });
-  
+
         const result = await service.update(testUlid, attributeForNameOnly);
         expect(result?.id).toBe(testUlid);
         expect(result?.email).toBe(afterValueForNameOnly.email);
@@ -173,19 +173,19 @@ describe('UsersService', () => {
       it('ユーザーを更新（emailのみ受け取り）', async () => {
         const attributeForEmailOnly = {
           email: 'taro.update@example.com',
-        }
+        };
         const afterValueForNameOnly = {
           ...attributeForEmailOnly,
-          name: '太郎'
+          name: '太郎',
         };
         const expectedValueForNameOnly = {
           id: testUlid,
           ...afterValueForNameOnly,
         };
         mockSend.mockResolvedValueOnce({
-          Attributes: expectedValueForNameOnly
+          Attributes: expectedValueForNameOnly,
         });
-  
+
         const result = await service.update(testUlid, attributeForEmailOnly);
         expect(result?.id).toBe(testUlid);
         expect(result?.email).toBe(afterValueForNameOnly.email);
@@ -203,7 +203,7 @@ describe('UsersService', () => {
     });
   });
 
-  describe('remove', () => { 
+  describe('remove', () => {
     const expectedValue = {
       id: testUlid,
       name: '太郎',
@@ -213,7 +213,7 @@ describe('UsersService', () => {
     describe('正常系', () => {
       it('ユーザーを削除', async () => {
         mockSend.mockResolvedValueOnce({
-          Attributes: expectedValue
+          Attributes: expectedValue,
         });
 
         const result = await service.remove(testUlid);

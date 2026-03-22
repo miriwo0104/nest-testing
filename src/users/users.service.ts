@@ -2,12 +2,17 @@ import { Injectable } from '@nestjs/common';
 import { type CreateUserDto, type User } from './dto/create-user.dto';
 import { type UpdateUserDto } from './dto/update-user.dto';
 import { ulid } from 'ulidx';
-import { ScanCommand, GetCommand, PutCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import {
+  ScanCommand,
+  GetCommand,
+  PutCommand,
+  UpdateCommand,
+  DeleteCommand,
+} from '@aws-sdk/lib-dynamodb';
 import { dynamoDb } from '../dynamodb.client';
 
 @Injectable()
 export class UsersService {
-
   /**
    * ユーザー作成
    *
@@ -22,13 +27,15 @@ export class UsersService {
     };
 
     try {
-      await dynamoDb.send(new PutCommand({
-        TableName: 'Users',
-        Item: {
-          id: userId,
-          ...createUserDto,
-        },
-      }));
+      await dynamoDb.send(
+        new PutCommand({
+          TableName: 'Users',
+          Item: {
+            id: userId,
+            ...createUserDto,
+          },
+        }),
+      );
 
       return user;
     } catch (error) {
@@ -44,9 +51,12 @@ export class UsersService {
    */
   async findAll(): Promise<User[]> {
     try {
-      const results = await dynamoDb.send(new ScanCommand({ // Partition Keyを使わない全件取得なので遅いから注意
-        TableName: 'Users',
-      }));
+      const results = await dynamoDb.send(
+        new ScanCommand({
+          // Partition Keyを使わない全件取得なので遅いから注意
+          TableName: 'Users',
+        }),
+      );
 
       return (results.Items as User[]) ?? [];
     } catch (error) {
@@ -72,7 +82,10 @@ export class UsersService {
    * @param updateUserDto
    * @returns
    */
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<User | undefined> {
+  async update(
+    id: string,
+    updateUserDto: UpdateUserDto,
+  ): Promise<User | undefined> {
     try {
       const expressions: string[] = [];
       const expressionAttributeNames: Record<string, string> = {};
@@ -89,16 +102,19 @@ export class UsersService {
         expressionAttributeValues[':email'] = updateUserDto.email;
       }
 
-      const result = await dynamoDb.send(new UpdateCommand({
-        TableName: 'Users',
-        Key: { id: id },
-        UpdateExpression: `set ${expressions.join(', ')}`,
-        ExpressionAttributeNames: Object.keys(expressionAttributeNames).length > 0
-          ? expressionAttributeNames
-          : undefined, // ← 空なら渡さない
-        ExpressionAttributeValues: expressionAttributeValues,
-        ReturnValues: 'ALL_NEW',
-      }));
+      const result = await dynamoDb.send(
+        new UpdateCommand({
+          TableName: 'Users',
+          Key: { id: id },
+          UpdateExpression: `set ${expressions.join(', ')}`,
+          ExpressionAttributeNames:
+            Object.keys(expressionAttributeNames).length > 0
+              ? expressionAttributeNames
+              : undefined, // ← 空なら渡さない
+          ExpressionAttributeValues: expressionAttributeValues,
+          ReturnValues: 'ALL_NEW',
+        }),
+      );
 
       return result.Attributes as User | undefined;
     } catch (error) {
@@ -115,13 +131,15 @@ export class UsersService {
    */
   async remove(id: string): Promise<User | undefined> {
     try {
-      const result = await dynamoDb.send(new DeleteCommand({
-        TableName: 'Users',
-        Key: {
-          id: id,
-        },
-        ReturnValues: 'ALL_OLD',
-      }));
+      const result = await dynamoDb.send(
+        new DeleteCommand({
+          TableName: 'Users',
+          Key: {
+            id: id,
+          },
+          ReturnValues: 'ALL_OLD',
+        }),
+      );
 
       return result.Attributes as User | undefined;
     } catch (error) {
@@ -138,12 +156,14 @@ export class UsersService {
    */
   private async findById(id: string): Promise<User | undefined> {
     try {
-      const result = await dynamoDb.send(new GetCommand({
-        TableName: 'Users',
-        Key: {
-          id: id,
-        },
-      }));
+      const result = await dynamoDb.send(
+        new GetCommand({
+          TableName: 'Users',
+          Key: {
+            id: id,
+          },
+        }),
+      );
 
       return result.Item as User | undefined;
     } catch (error) {

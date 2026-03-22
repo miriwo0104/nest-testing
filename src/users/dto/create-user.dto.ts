@@ -7,4 +7,4 @@ export const createUserSchema = z.object({
 
 export type CreateUserDto = z.infer<typeof createUserSchema>;
 
-export type User = CreateUserDto & { id: string } // Intersection（交差）型
+export type User = CreateUserDto & { id: string }; // Intersection（交差）型
