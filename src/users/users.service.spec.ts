@@ -141,11 +141,55 @@ describe('UsersService', () => {
         mockSend.mockResolvedValueOnce({
           Attributes: expectedValue
         });
-
+  
         const result = await service.update(testUlid, afterValue);
         expect(result?.id).toBe(testUlid);
         expect(result?.email).toBe(afterValue.email);
         expect(result?.name).toBe(afterValue.name);
+      });
+
+      it('ユーザーを更新（nameのみ受け取り）', async () => {
+        const attributeForNameOnly = {
+          name: '太郎_update'
+        }
+        const afterValueForNameOnly = {
+          ...attributeForNameOnly,
+          email: 'taro@example.com',
+        };
+        const expectedValueForNameOnly = {
+          id: testUlid,
+          ...afterValueForNameOnly,
+        };
+        mockSend.mockResolvedValueOnce({
+          Attributes: expectedValueForNameOnly
+        });
+  
+        const result = await service.update(testUlid, attributeForNameOnly);
+        expect(result?.id).toBe(testUlid);
+        expect(result?.email).toBe(afterValueForNameOnly.email);
+        expect(result?.name).toBe(afterValueForNameOnly.name);
+      });
+
+      it('ユーザーを更新（emailのみ受け取り）', async () => {
+        const attributeForEmailOnly = {
+          email: 'taro.update@example.com',
+        }
+        const afterValueForNameOnly = {
+          ...attributeForEmailOnly,
+          name: '太郎'
+        };
+        const expectedValueForNameOnly = {
+          id: testUlid,
+          ...afterValueForNameOnly,
+        };
+        mockSend.mockResolvedValueOnce({
+          Attributes: expectedValueForNameOnly
+        });
+  
+        const result = await service.update(testUlid, attributeForEmailOnly);
+        expect(result?.id).toBe(testUlid);
+        expect(result?.email).toBe(afterValueForNameOnly.email);
+        expect(result?.name).toBe(afterValueForNameOnly.name);
       });
     });
 
