@@ -110,7 +110,6 @@ describe('UsersService', () => {
         });
         
         const result = await service.findOne(testUlid);
-        console.log(result); // TODO: 検証の残り 最後に消す
         expect(result?.id).toBe(testUlid);
         expect(result?.name).toBe(expectedValue.name);
         expect(result?.email).toBe(expectedValue.email);
