@@ -94,4 +94,36 @@ describe('UsersService', () => {
       expect(result).toEqual([]);
     });
   });
+
+  describe('findOne', () => {
+    const expectedValue = {
+      id: testUlid,
+      name: '太郎',
+      email: 'taro@example.com',
+    };
+
+    describe('正常系', () => {  
+      it('ユーザーを一件返す', async () => {
+        mockSend.mockResolvedValueOnce({
+          // NOTE: findByIdメソッドで読んでるdynamoDb.sendをモックしているので、戻り値の形状をあわせるためにDynamoDB SDK返すレスポンスキーを指定
+          Item: expectedValue
+        });
+        
+        const result = await service.findOne(testUlid);
+        console.log(result);
+        expect(result?.id).toBe(testUlid);
+        expect(result?.name).toBe(expectedValue.name);
+        expect(result?.email).toBe(expectedValue.email);
+      });
+    });
+    describe('異常系', () => {
+      it('DynamoDBがエラーを投げた場合', async () => {
+        mockSend.mockRejectedValueOnce(new Error('DynamoDB error'));
+
+        const resutl = await service.findOne(testUlid);
+
+        expect(resutl).toBeUndefined();
+      });
+    });
+  });
 });
